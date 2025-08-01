@@ -19,7 +19,7 @@
   "author": "MCP Autodeploy Team",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.0",
+    "@modelcontextprotocol/sdk": "^1.17.1",
     "axios": "^1.6.2",
     "dotenv": "^16.3.1"
   },
