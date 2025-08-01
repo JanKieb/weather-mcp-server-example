@@ -2,7 +2,8 @@
 import express from 'express';
 import { Server } from '@modelcontextprotocol/sdk/server/index';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio';
-import { HttpServerTransport } from '@modelcontextprotocol/sdk/transport/http';
+// @ts-ignore
+import { HttpServerTransport } from '@modelcontextprotocol/sdk/server/http.js';
 import {
   CallToolRequestSchema,
   ListPromptsRequestSchema,
