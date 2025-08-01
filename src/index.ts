@@ -49,7 +49,7 @@ class WeatherMCPServer {
     // Configure Express app
     this.app.use(express.json());
     this.app.get('/', (_: Request, res: Response) => res.send('Weather MCP up'));
-    this.app.all('/mcp', (req: Request, res: Response) => this.httpTransport.handleRequest(req, res));
+    this.app.all('/mcp*', (req: Request, res: Response) => this.httpTransport.handleRequest(req, res));
 
     // Start HTTP listener
     const port = Number(process.env.PORT) || 8080;
