@@ -2,6 +2,7 @@
 import express from 'express';                                        // NEW
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
   CallToolRequestSchema,
   ListPromptsRequestSchema,
@@ -25,7 +26,9 @@ class WeatherMCPServer {
 
   constructor() {
     // Basic health route (Cloud Run will probe this)
-    this.app.get('/', (_, res) => res.send('Weather MCP up'));       // NEW
+    this.app.get('/', (_, res) => res.send('Weather MCP up'));
+    // JSON body parser for POST requests to /mcp (needed by transport)
+    this.app.use(express.json({ limit: '4mb' }));       // NEW
 
     // Start HTTP listener immediately (keep process alive)
     const port = Number(process.env.PORT) || 8080;                   // NEW
@@ -323,8 +326,30 @@ Visibility: ${data.visibility / 1000} km`,
   }
 
   async start() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
+    // Create transports for both local (stdio) and remote (HTTP) connections
+    const stdioTransport = new StdioServerTransport();
+    const httpTransport = new StreamableHTTPServerTransport({
+      // Stateless mode – Windsurf will initialize the session with a POST
+      sessionIdGenerator: undefined,
+    });
+
+    // Forward all MCP HTTP requests to the transport
+    this.app.all('/mcp', (req: express.Request, res: express.Response) => {
+      // If this is a POST request, express.json has already parsed the body
+      // and put it on req.body, otherwise we pass undefined.
+      // StreamableHTTPServerTransport will figure out the rest.
+      // Note: handleRequest returns a promise but we deliberately ignore
+      // the async result here; errors are sent through the response stream.
+      void httpTransport.handleRequest(req as any, res as any, (req as any).body);
+    });
+
+    // Connect transports
+
+    await Promise.all([
+      this.server.connect(stdioTransport),
+      this.server.connect(httpTransport),
+    ]);
+
     console.error('Weather MCP server running (stdio & HTTP)');
   }
 }
