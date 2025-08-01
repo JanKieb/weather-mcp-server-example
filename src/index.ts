@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import express from 'express';
-import { Server } from '@modelcontextprotocol/sdk/server/index';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio';
+// @ts-ignore
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+// @ts-ignore
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 // @ts-ignore
 import { HttpServerTransport } from '@modelcontextprotocol/sdk/server/http.js';
 import {
