@@ -2,7 +2,7 @@
 import express from 'express';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { HttpServerTransport } from '@modelcontextprotocol/sdk/server/http.js';     // NEW
+import { HttpServerTransport } from '@modelcontextprotocol/sdk/transport/http.js';
 import {
   CallToolRequestSchema,
   ListPromptsRequestSchema,
@@ -22,10 +22,10 @@ const WEATHER_API_BASE = 'http://api.openweathermap.org/data/2.5';
 class WeatherMCPServer {
   private server: Server;
   private app = express();
-  private port: number;                                                 // NEW
+  private port: number;
 
   constructor() {
-    this.port = Number(process.env.PORT) || 8080;                       // NEW
+    this.port = Number(process.env.PORT) || 8080;
 
     /* ---------- HTTP health route so Cloud Run succeeds ---------- */
     this.app.get('/', (_, res) => res.send('Weather MCP up'));
@@ -87,7 +87,7 @@ class WeatherMCPServer {
 
     // Tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async req => {
-      const { name, arguments: args } = req.params;
+      const { name, arguments: args } = req.params as { name: string; arguments: any };
       try {
         switch (name) {
           case 'get_weather':
@@ -248,8 +248,8 @@ Visibility: ${data.visibility / 1000} km`
     await this.server.connect(stdio);
 
     // HTTP transport (for remote MCP clients / Windsurf)
-    const http = new HttpServerTransport({ port: this.port });        // NEW
-    await this.server.connect(http);                                  // NEW
+    const http = new HttpServerTransport({ port: this.port });
+    await this.server.connect(http);
 
     console.error('Weather MCP server ready (stdio & HTTP)');
   }
