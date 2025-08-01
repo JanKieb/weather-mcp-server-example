@@ -114,11 +114,23 @@ class WeatherMCPServer {
       const { name, arguments: args } = request.params;
 
       try {
+        if (!args) {
+          throw new Error(`Arguments are required for tool: ${name}`);
+        }
+
         switch (name) {
-          case 'get_weather':
-            return await this.getCurrentWeather(args.city, args.units || 'metric');
-          case 'get_forecast':
-            return await this.getWeatherForecast(args.city, args.units || 'metric');
+          case 'get_weather': {
+            const city = (args as any).city;
+            if (typeof city !== 'string') throw new Error('City must be a string');
+            const units = (args as any).units || 'metric';
+            return await this.getCurrentWeather(city, units);
+          }
+          case 'get_forecast': {
+            const city = (args as any).city;
+            if (typeof city !== 'string') throw new Error('City must be a string');
+            const units = (args as any).units || 'metric';
+            return await this.getWeatherForecast(city, units);
+          }
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
