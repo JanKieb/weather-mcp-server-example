@@ -1,9 +1,7 @@
 #!/usr/bin/env node
-import express, { Request, Response } from 'express';                                        // NEW
+import express from 'express';                                        // NEW
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { randomUUID } from 'crypto';
 import {
   CallToolRequestSchema,
   ListPromptsRequestSchema,
@@ -23,14 +21,17 @@ const WEATHER_API_BASE = 'http://api.openweathermap.org/data/2.5';
 
 class WeatherMCPServer {
   private server: Server;
-  private app = express();
-  private httpTransport: StreamableHTTPServerTransport;
+  private app = express();                                           // NEW
 
   constructor() {
-    // Initialize transports and server
-    this.httpTransport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-    });
+    // Basic health route (Cloud Run will probe this)
+    this.app.get('/', (_, res) => res.send('Weather MCP up'));       // NEW
+
+    // Start HTTP listener immediately (keep process alive)
+    const port = Number(process.env.PORT) || 8080;                   // NEW
+    this.app.listen(port, () => {                                    // NEW
+      console.log(`Weather MCP HTTP server listening on ${port}`);   // NEW
+    });                                                              // NEW
 
     this.server = new Server(
       {
@@ -45,17 +46,6 @@ class WeatherMCPServer {
         },
       }
     );
-
-    // Configure Express app
-    this.app.use(express.json());
-    this.app.get('/', (_: Request, res: Response) => res.send('Weather MCP up'));
-    this.app.all('/mcp/*', (req: Request, res: Response) => this.httpTransport.handleRequest(req, res));
-
-    // Start HTTP listener
-    const port = Number(process.env.PORT) || 8080;
-    this.app.listen(port, () => {
-      console.log(`Weather MCP HTTP server listening on ${port}`);
-    });
 
     this.setupHandlers();
   }
@@ -114,23 +104,11 @@ class WeatherMCPServer {
       const { name, arguments: args } = request.params;
 
       try {
-        if (!args) {
-          throw new Error(`Arguments are required for tool: ${name}`);
-        }
-
         switch (name) {
-          case 'get_weather': {
-            const city = (args as any).city;
-            if (typeof city !== 'string') throw new Error('City must be a string');
-            const units = (args as any).units || 'metric';
-            return await this.getCurrentWeather(city, units);
-          }
-          case 'get_forecast': {
-            const city = (args as any).city;
-            if (typeof city !== 'string') throw new Error('City must be a string');
-            const units = (args as any).units || 'metric';
-            return await this.getWeatherForecast(city, units);
-          }
+          case 'get_weather':
+            return await this.getCurrentWeather(args.city, args.units || 'metric');
+          case 'get_forecast':
+            return await this.getWeatherForecast(args.city, args.units || 'metric');
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -345,13 +323,8 @@ Visibility: ${data.visibility / 1000} km`,
   }
 
   async start() {
-    // Stdio transport for local execution
-    const stdioTransport = new StdioServerTransport();
-    this.server.connect(stdioTransport);
-
-    // HTTP transport for Cloud Run
-    this.server.connect(this.httpTransport);
-
+    const transport = new StdioServerTransport();
+    await this.server.connect(transport);
     console.error('Weather MCP server running (stdio & HTTP)');
   }
 }
