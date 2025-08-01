@@ -1,25 +1,22 @@
 FROM node:18-alpine
 
-WORKDIR /app
+# Create app directory
+WORKDIR /usr/src/app
 
-# Copy package files
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# where available (npm@5+)
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+RUN npm install
+# If you are building your code for production
+# RUN npm ci --omit=dev
 
-# Copy source code
+# Bundle app source
 COPY . .
 
-# Build the application
 RUN npm run build
 
-# Expose port (for Cloud Run)
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "console.log('Health check passed')" || exit 1
-
-# Start the application
-CMD ["npm", "start"]
+CMD [ "npm", "start" ]
