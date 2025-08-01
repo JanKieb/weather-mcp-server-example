@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 import express from 'express';
-import { Server } from '@modelcontextprotocol/sdk/server';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server';
-import { HttpServerTransport } from '@modelcontextprotocol/sdk/server';
 import {
+  Server,
+  StdioServerTransport,
+  HttpServerTransport,
   CallToolRequestSchema,
   ListPromptsRequestSchema,
   ListResourcesRequestSchema,
   ListToolsRequestSchema,
   ReadResourceRequestSchema
-} from '@modelcontextprotocol/sdk/types';
+} from '@modelcontextprotocol/sdk';
 import axios from 'axios';
 import dotenv from 'dotenv';
 
