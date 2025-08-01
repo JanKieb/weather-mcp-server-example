@@ -1,12 +1,8 @@
 #!/usr/bin/env node
 import express from 'express';
-// @ts-ignore
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-// @ts-ignore
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-// @ts-ignore
-// @ts-ignore
-import { HttpServerTransport } from '@modelcontextprotocol/sdk/transport/http.js';
+import { Server } from '@modelcontextprotocol/sdk/server';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server';
+import { HttpServerTransport } from '@modelcontextprotocol/sdk/server';
 import {
   CallToolRequestSchema,
   ListPromptsRequestSchema,
