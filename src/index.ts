@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+import express from 'express';                                        // NEW
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -21,8 +21,18 @@ const WEATHER_API_BASE = 'http://api.openweathermap.org/data/2.5';
 
 class WeatherMCPServer {
   private server: Server;
+  private app = express();                                           // NEW
 
   constructor() {
+    // Basic health route (Cloud Run will probe this)
+    this.app.get('/', (_, res) => res.send('Weather MCP up'));       // NEW
+
+    // Start HTTP listener immediately (keep process alive)
+    const port = Number(process.env.PORT) || 8080;                   // NEW
+    this.app.listen(port, () => {                                    // NEW
+      console.log(`Weather MCP HTTP server listening on ${port}`);   // NEW
+    });                                                              // NEW
+
     this.server = new Server(
       {
         name: 'weather-mcp-server',
@@ -115,7 +125,7 @@ class WeatherMCPServer {
       }
     });
 
-    // List available resources
+    // List resources
     this.server.setRequestHandler(ListResourcesRequestSchema, async () => {
       return {
         resources: [
@@ -135,7 +145,7 @@ class WeatherMCPServer {
       };
     });
 
-    // Handle resource requests
+    // Handle resource reads
     this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       const { uri } = request.params;
 
@@ -184,7 +194,7 @@ class WeatherMCPServer {
       }
     });
 
-    // List available prompts
+    // List prompts
     this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
       return {
         prompts: [
@@ -271,26 +281,25 @@ Visibility: ${data.visibility / 1000} km`,
       // Group forecasts by day
       const dailyForecasts = data.list.reduce((acc: any, item: any) => {
         const date = new Date(item.dt * 1000).toDateString();
-        if (!acc[date]) {
-          acc[date] = [];
-        }
+        if (!acc[date]) acc[date] = [];
         acc[date].push(item);
         return acc;
       }, {});
 
-      Object.entries(dailyForecasts).slice(0, 5).forEach(([date, forecasts]: [string, any]) => {
-        const dayForecasts = forecasts.slice(0, 3); // First 3 forecasts of the day
-        forecastText += `${date}:\n`;
-        
-        dayForecasts.forEach((forecast: any) => {
-          const time = new Date(forecast.dt * 1000).toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
+      Object.entries(dailyForecasts)
+        .slice(0, 5)
+        .forEach(([date, forecasts]: [string, any]) => {
+          const dayForecasts = (forecasts as any[]).slice(0, 3); // first 3 forecasts of the day
+          forecastText += `${date}:\n`;
+          dayForecasts.forEach((forecast: any) => {
+            const time = new Date(forecast.dt * 1000).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
+            forecastText += `  ${time}: ${forecast.main.temp}${unitSymbol}, ${forecast.weather[0].description}\n`;
           });
-          forecastText += `  ${time}: ${forecast.main.temp}${unitSymbol}, ${forecast.weather[0].description}\n`;
+          forecastText += '\n';
         });
-        forecastText += '\n';
-      });
 
       return {
         content: [
@@ -316,7 +325,7 @@ Visibility: ${data.visibility / 1000} km`,
   async start() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error('Weather MCP server running on stdio');
+    console.error('Weather MCP server running (stdio & HTTP)');
   }
 }
 
