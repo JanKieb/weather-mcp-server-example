@@ -104,14 +104,17 @@ class WeatherMCPServer {
 
     // Handle tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
+      const { name, arguments: rawArgs } = request.params;
+      const args = (rawArgs ?? {}) as { city?: string; units?: string };
 
       try {
         switch (name) {
           case 'get_weather':
-            return await this.getCurrentWeather(args.city, args.units || 'metric');
+            if (!args.city) throw new Error('Missing "city" argument');
+            return await this.getCurrentWeather(args.city, args.units ?? 'metric');
           case 'get_forecast':
-            return await this.getWeatherForecast(args.city, args.units || 'metric');
+            if (!args.city) throw new Error('Missing "city" argument');
+            return await this.getWeatherForecast(args.city, args.units ?? 'metric');
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
